@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Circles on Parallel Arcs</title>
+  <style>
+    svg {
+      width: 100%;
+      height: 100vh;
+      background: #f4660760;
+    }
+    circle {
+      fill: steelblue;
+    }
+    path {
+      fill: none;
+      stroke: rgba(211, 211, 211, 0.33);
+      stroke-width: 2;
+    }
+    
+    /* Button Style */
+    .mask-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      padding: 10px 20px;
+      background-color: #ff6347;
+      color: white;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Mask Up/Down Button -->
+<button class="mask-button" id="mask-up-button">Mask Up</button>
+
+<!-- Info Box for Mask Information -->
+<div id="mask-info-box" style="position:absolute; top: 70px; font-size: 16px; background-color: #ffffff7d; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 300px; visibility: hidden">
+  N95 masks are helpful in reducing exposure to air pollution by filtering out at least 95% of particulate matter, which can significantly improve air quality for individuals in polluted environments.
+</div>
+
+<svg viewBox="0 0 1000 700">
+  <!-- Three parallel arc paths -->
+  <path id="arc2" d="M 500 380 A 300 200 60 0 0 730 280 A 300 200 60 0 1 770 280 A 300 200 60 0 1 790 390 A 300 200 60 0 1 750 400 " />
+  <path id="arc1" d="M 500 400 A 300 200 60 0 0 730 280 A 300 200 60 0 1 770 280 A 300 200 60 0 1 790 390 A 300 200 60 0 1 830 400" />
+  <!-- Image positioned relative to viewBox -->
+  <image 
+    href="lungsbg.png" 
+    x="620" 
+    y="200" 
+    width="350" 
+    height="350" 
+    id="image" 
+    preserveAspectRatio="xMidYMid meet"
+  />
+</svg>
+
+<script>
+
+  const svg = document.querySelector('svg');
+  const paths = [document.getElementById('arc1'), document.getElementById('arc2')];
+  const image = document.getElementById('image');
+  
+  // Get image position in SVG coordinates
+  const imageX = parseFloat(image.getAttribute('x'));
+  const imageY = parseFloat(image.getAttribute('y'));
+  const imageWidth = parseFloat(image.getAttribute('width'));
+  const imageHeight = parseFloat(image.getAttribute('height'));
+    
+  // Create 50 circles moving along arcs
+  const circles = [];
+  const path1 = paths[0];  // arc1
+const path2 = paths[1];  // arc2
+
+function createCircles(maskApplied) {
+  // Clear the previous circles
+  circles.forEach(circle => {
+    svg.removeChild(circle.el);  // Remove circle element from SVG
+  });
+  circles.length = 0; // Clear existing circles
+  for (let i = 0; i < 50; i++) {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute('r', 4);
+    svg.appendChild(circle);
+
+    // When the mask is not applied, 50% circles on each path
+    // When the mask is applied, 5% circles on one path and 95% on the other
+    const pathToUse = maskApplied 
+      ? (Math.random() > 0.05 ? path2 : path1)  // 95% on path2 and 5% on path1 when mask is applied
+      : (Math.floor(Math.random() * 2) === 0 ? path1 : path2);  // 50% on path1 and 50% on path2 when mask is not applied
+
+    circles.push({
+      el: circle,
+      path: pathToUse,
+      progress: Math.random(),
+      speed: 0.001 + Math.random() * 0.002
+    });
+  }
+}
+
+// Initial creation of circles
+createCircles(false);
+
+  // Create 500 background particles
+  const particles = [];
+  for (let i = 0; i < 500; i++) {
+    const particle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    particle.setAttribute('r', 4);
+    particle.setAttribute('fill', 'rgba(0, 0, 255, 0.5)');
+    svg.appendChild(particle);
+    particles.push({
+      el: particle,
+      x: Math.random() * 1000, 
+      y: Math.random() * 700,
+      dx: (Math.random() - 0.5) * 0.5,
+      dy: (Math.random() - 0.5) * 0.5,
+    });
+  }
+
+  function animate() {
+    // Move circles along arcs
+    circles.forEach(c => {
+      c.progress += c.speed;
+      if (c.progress > 1) c.progress = 0;
+
+      const length = c.path.getTotalLength();
+      const point = c.path.getPointAtLength(c.progress * length);
+
+      c.el.setAttribute('cx', point.x);
+      c.el.setAttribute('cy', point.y);
+    });
+
+    // Move background particles
+    particles.forEach(p => {
+      p.x += p.dx;
+      p.y += p.dy;
+
+      // Check if particle is within image bounds using viewBox coordinates
+      if (p.x >= imageX+20 && p.x <= imageX + imageWidth-20 &&
+          p.y >= imageY && p.y <= imageY + imageHeight) {
+        p.el.setAttribute('visibility', 'hidden');
+      } else {
+        p.el.setAttribute('visibility', 'visible');
+      }
+
+      // Bounce off viewBox boundaries
+      if (p.x <= 0 || p.x >= 1000) p.dx = -p.dx;
+      if (p.y <= 0 || p.y >= 700) p.dy = -p.dy;
+
+      p.el.setAttribute('cx', p.x);
+      p.el.setAttribute('cy', p.y);
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    particles.forEach(p => {
+      if (p.x < 0) p.x = 0;
+      if (p.x > 1000) p.x = 1000;
+      if (p.y < 0) p.y = 0;
+      if (p.y > 700) p.y = 700;
+    });
+  });
+
+  // Event listener for the toggle button
+  let maskApplied = false; // Track whether the mask is applied
+  document.getElementById('mask-up-button').addEventListener('click', function() {
+    maskApplied = !maskApplied; // Toggle mask state
+
+    // Change the button text
+    this.textContent = maskApplied ? 'Mask Down' : 'Mask Up';
+
+    // Switch image based on the mask state
+    image.setAttribute('href', maskApplied ? 'lungsbg_mask.png' : 'lungsbg.png');
+
+    // Update arcs based on the mask state
+    if (maskApplied) {
+      const randomEndValue = Math.random() > 0.5 ? 830 : 750;
+      console.log(randomEndValue);
+      document.getElementById('arc1').setAttribute('d', `M 500 380 A 300 200 60 0 0 730 280 A 300 200 70 0 1 780 280 A 300 200 60 0 1 790 390 A 300 200 60 0 1 ${randomEndValue} 400`);
+      document.getElementById('arc2').setAttribute('d', 'M 500 400 A 300 200 60 0 0 730 320 A 300 200 60 0 0 720 230');
+      // Show the mask info box
+      document.getElementById('mask-info-box').style.visibility = "visible";
+    } else {
+      document.getElementById('arc1').setAttribute('d', 'M 500 400 A 300 200 60 0 0 730 280 A 300 200 60 0 1 770 280 A 300 200 60 0 1 790 390 A 300 200 60 0 1 830 400');
+      document.getElementById('arc2').setAttribute('d', 'M 500 380 A 300 200 60 0 0 730 280 A 300 200 60 0 1 770 280 A 300 200 60 0 1 790 390 A 300 200 60 0 1 750 400');
+      // Hide the mask info box
+      document.getElementById('mask-info-box').style.visibility = "hidden";
+    }
+
+    createCircles(maskApplied);
+
+  });
+</script>
+</body>
+</html>

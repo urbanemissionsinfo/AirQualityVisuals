@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Page Template</title>
+        <script type="text/javascript" src="d3.v7.js"></script>
+        <link rel="stylesheet" href="styles.css">
+
+    </head>
+    
+    <body>
+        <script type="text/javascript">
+
+            var dataset; //Global variable
+            var dataset_array = [5,10,15,20,25];
+
+            // Your beautiful D3 code will go here -- D3 can select DOM elements and dynamically add/delete content to it
+            // d3.select("body").append("p").text("New paragraph!"); // .text places the text inside it within the DOM element.
+            
+            // Binding data to DOM element.
+            d3.select('body').selectAll('p')
+                                .data(dataset_array) // returns the datum of each element -- to be used in function later.
+                                .enter() // binds data to all the selected elements (creates new elements if needed)
+                                .append('p')
+                                .text(function(du) {return "This iss " + du}) // the .data method returns d (or du or anything) as data -- which can be used in functions
+                                .style("color", function(d) {
+                                    if (d>10) {
+                                        return "red";
+                                    } else {
+                                        return "blue";
+                                    }                            
+                                })
+        
+            d3.select('body').selectAll('div')
+                                .data(dataset_array)
+                                .enter()
+                                .append("div")
+                                //.text(function(du) {return du})
+                                .attr("class", "bar")
+                                .style("height", function(d) {return (5*d) + 'px'});
+
+            // SVG
+            var svg = d3.select("body").append("svg").attr("width", 500).attr("height", 50); //First create SVG element
+
+            svg.selectAll("circle")
+                                .data(dataset_array)
+                                .enter()
+                                .append("circle")
+                                .attr("cx", function(d,i){return(i*50)+25})
+                                .attr("cy", 25)
+                                .attr("r", function(d) {return d});
+
+            // SVG Bar
+            var w = 500;
+            var h = 130;
+            var svg_bar = d3.select("body").append("svg").attr("width", w).attr("height", h); //First create SVG element
+            svg_bar.selectAll("rect")
+                                .data(dataset_array)
+                                .enter()
+                                .append("rect")
+                                .attr("x", function(d,i) {return(i*30)})
+                                .attr("y", function(d) {return h-d*3}) //Draw from top of bar downwards
+                                .attr("width", 20)
+                                .attr("height", function(d) {return d*3})
+                                .attr("fill",function(d){return"rgb(0, 0, "+Math.round(d*12)+")";});
+            svg_bar.selectAll("text")
+                                .data(dataset_array)
+                                .enter()
+                                .append("text")
+                                .text(function(d){return d})
+                                .attr("x", function(d,i) {return(i*30+5)})
+                                .attr("y", function(d) {return h-d*3+11}) //Draw from top of bar downwards;
+
+
+                
+
+            d3.csv("data/AllIndiaBulletins_Mastwer.csv", // This is an asynchronous function. even d3.json() d3.tsv()
+            function(error, data){ //Use error parameter when data fails to load.
+                if (error) {
+                    console.log(error);
+                } else {
+                    dataset = data;
+                    console_log();
+                    // All functions to visualise your data will go here. 
+                    makeAwesoemcharts();
+                    makeGreatCharts();
+                }
+                
+
+            });
+
+            function console_log() {
+                console.log(dataset);
+            }
+
+        </script>
+    </body>
+</html>

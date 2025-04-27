@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM2.5 Concentration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Current PM2.5 Concentration</h1>
+    <p id="status">Fetching your location...</p>
+    <div id="airQualityInfo" class="info" style="display: none;">
+        <p><strong>Location:</strong> <span id="location"></span></p>
+        <p><strong>PM2.5 Concentration:</strong> <span id="pm25"></span> µg/m³</p>
+        <p><strong>Air Quality Index (AQI):</strong> <span id="aqi"></span></p>
+        <p><strong>Health Advisory:</strong> <span id="healthAdvisory"></span></p>
+    </div>
+
+    <script>
+        const apiKey = 'ef1d444ee2f111b895db98fbd0a5df5d'; // Replace with your OpenWeatherMap API key
+
+        // Function to fetch air quality data
+        async function fetchAirQuality(lat, lon) {
+            const url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.list && data.list[0]) {
+                    const pm25 = data.list[0].components.pm2_5;
+                    const aqi = data.list[0].main.aqi;
+                    const healthAdvisory = getHealthAdvisory(aqi);
+
+                    document.getElementById('location').textContent = `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+                    document.getElementById('pm25').textContent = pm25.toFixed(2);
+                    document.getElementById('aqi').textContent = aqi;
+                    document.getElementById('healthAdvisory').textContent = healthAdvisory;
+                    document.getElementById('airQualityInfo').style.display = 'block';
+                    document.getElementById('status').style.display = 'none';
+                } else {
+                    throw new Error('Air quality data not available');
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'Failed to fetch air quality data.';
+                document.getElementById('status').classList.add('error');
+            }
+        }
+
+        // Function to get health advisory based on AQI
+        function getHealthAdvisory(aqi) {
+            switch (aqi) {
+                case 1: return 'Air quality is considered satisfactory, and air pollution poses little or no risk.';
+                case 2: return 'Air quality is acceptable; however, for some pollutants there may be a moderate health concern for a very small number of people who are unusually sensitive to air pollution.';
+                case 3: return 'Members of sensitive groups may experience health effects. The general public is less likely to be affected.';
+                case 4: return 'Health alert: everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects.';
+                case 5: return 'Health warning of emergency conditions: the entire population is more likely to be affected.';
+                default: return 'Unknown AQI level';
+            }
+        }
+
+        // Get user's location and fetch air quality data
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                fetchAirQuality(lat, lon);
+            }, () => {
+                document.getElementById('status').textContent = 'Geolocation permission denied or unavailable.';
+                document.getElementById('status').classList.add('error');
+            });
+        } else {
+            document.getElementById('status').textContent = 'Geolocation is not supported by this browser.';
+            document.getElementById('status').classList.add('error');
+        }
+    </script>
+</body>
+</html>
