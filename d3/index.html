@@ -9,10 +9,13 @@
     </head>
     
     <body>
+        <p id="updatedata">Click on this text to update the chart with new data values (once).</p>
+        <p id="sortdata">Sort data</p>
+
         <script type="text/javascript">
 
             var dataset; //Global variable
-            var dataset_array = [5,10,15,20,25];
+            var dataset_array = [ 5, 10, 13, 19, 25, 12, 7, 19 ];
 
             // Your beautiful D3 code will go here -- D3 can select DOM elements and dynamically add/delete content to it
             // d3.select("body").append("p").text("New paragraph!"); // .text places the text inside it within the DOM element.
@@ -31,13 +34,13 @@
                                     }                            
                                 })
         
-            d3.select('body').selectAll('div')
-                                .data(dataset_array)
-                                .enter()
-                                .append("div")
-                                //.text(function(du) {return du})
-                                .attr("class", "bar")
-                                .style("height", function(d) {return (5*d) + 'px'});
+            // d3.select('body').selectAll('div')
+            //                     .data(dataset_array)
+            //                     .enter()
+            //                     .append("div")
+            //                     //.text(function(du) {return du})
+            //                     .attr("class", "bar")
+            //                     .style("height", function(d) {return (5*d) + 'px'});
 
             // SVG
             var svg = d3.select("body").append("svg").attr("width", 500).attr("height", 50); //First create SVG element
@@ -51,48 +54,240 @@
                                 .attr("r", function(d) {return d});
 
             // SVG Bar
+            
             var w = 500;
-            var h = 130;
-            var svg_bar = d3.select("body").append("svg").attr("width", w).attr("height", h); //First create SVG element
+            var h = 200;
+            var margin = { top: 20, right: 20, bottom: 30, left: 40 };
+
+            // Y scale (used for both bars and axis)
+            var scale = d3.scaleLinear()
+                .domain([0, 25])     // Start from 0 to include bar base
+                .range([h - margin.bottom, margin.top]); // Top-down
+
+            // X Scale (ordinal scale)
+            var x = d3.scaleBand()
+                .domain(d3.range(dataset_array.length)) // Use index instead of value
+                .range([margin.left, w - margin.right])
+                .padding(0.01);
+
+            var svg_bar = d3.select("body")
+                .append("svg")
+                .attr("width", w)
+                .attr("height", h);
+
+            // Bars
             svg_bar.selectAll("rect")
-                                .data(dataset_array)
-                                .enter()
-                                .append("rect")
-                                .attr("x", function(d,i) {return(i*30)})
-                                .attr("y", function(d) {return h-d*3}) //Draw from top of bar downwards
-                                .attr("width", 20)
-                                .attr("height", function(d) {return d*3})
-                                .attr("fill",function(d){return"rgb(0, 0, "+Math.round(d*12)+")";});
+                .data(dataset_array)
+                .enter()
+                .append("rect")
+                .on("mouseover", (event, d)=>{
+                        var xPos = parseFloat(d3.select(event.currentTarget).attr('x'))+x.bandwidth()/2;
+                        var yPos = parseFloat(d3.select(event.currentTarget).attr('y')) - 10;
+                        // Tool Tips
+                        svg_bar.append("text")
+                        .attr("id", "tooltip")
+                        .attr("x", xPos)
+                        .attr("y", yPos)
+                        .attr("text-anchor", "middle")
+                        .attr("font-family", "sans-serif")
+                        .attr("font-size", "11px")
+                        .attr("font-weight", "bold")
+                        .attr("fill", "black")
+                        .text(d);
+                    })
+                .on("mouseout", (event, d)=>d3.select("#tooltip").remove())
+                .attr("x", (d, i) => x(i))
+                .attr("y", d => scale(d))
+                .attr("width", x.bandwidth())
+                .attr("height", d => scale(0) - scale(d)) // Height = difference between base and value
+                .attr("fill", d => `rgb(0, 0, ${Math.round(d * 12)})`);
+            
+            // Text labels
             svg_bar.selectAll("text")
-                                .data(dataset_array)
-                                .enter()
-                                .append("text")
-                                .text(function(d){return d})
-                                .attr("x", function(d,i) {return(i*30+5)})
-                                .attr("y", function(d) {return h-d*3+11}) //Draw from top of bar downwards;
+                .data(dataset_array)
+                .enter()
+                .append("text")
+                .text(d => d)
+                .attr("x", (d, i) => x(i) + x.bandwidth() / 2)
+                .attr("y", d => scale(d) + 14)
+                .attr("class", "labels");
 
+            // Y Axis
+            svg_bar.append("g")
+                .attr("class", "yaxis")
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(d3.axisLeft(scale));
+            // X Axis
+            svg_bar.append("g")
+                .attr("class", "xaxis")
+                .attr("transform", `translate(0,${h - margin.bottom})`)
+                .call(d3.axisBottom(x));
 
+            d3.select("#updatedata")
+                .on("click", function() {
+                    console.log('Hi');
+                    //Do something  on click
+                    //New values for dataset
+                    // var numValues = dataset_array.length;               
+                    // dataset_array = [];                                       
+                    // for (var i = 0; i < numValues; i++) {               
+                    // //Loop numValues times
+                    // var newNumber = Math.floor(Math.random() * 50); //New random integer (0-50)
+                    // dataset_array.push(newNumber);         //Add new number to array
+                    // }
+                    var newNumber = Math.floor(Math.random() * 50);
+                    dataset_array.push(newNumber);     
+                    // dataset_array.shift();
+                    console.log(dataset_array);
+                    
+                    // UPDATE Scales
+                    x.domain(d3.range(dataset_array.length)) // Use index instead of value
+                    scale.domain([0, d3.max(dataset_array)])   // Start from 0 to include bar base
+
+                    // BARS
+                    const bars = svg_bar.selectAll("rect")
+                                        .data(dataset_array);
+
+                    // ENTER bars
+                    bars.enter()
+                        .append("rect")
+                        .attr("x", (d, i) => x(i))
+                        .attr("y", scale(0))  // Start from baseline
+                        .attr("height", 0)    // Start height = 0
+                        .attr("width", x.bandwidth())
+                        .transition()
+                        .delay((d, i) => i*100)
+                        .attr("y", d => scale(d))
+                        .attr("height", d => scale(0) - scale(d)) // Height = difference between base and value
+                        .attr("fill", d => `rgb(0, 0, ${Math.round(d * 12)})`);
+
+                    // EXIT BARS
+                    // bars.exit()
+                    //     .transition()
+                    //     .duration(500)
+                    //     .attr("y", scale(0))
+                    //     .attr("height", 0)
+                    //     .remove();
+
+                    // UPDATE BARS WITH TRANSITION
+                    bars.transition()
+                        .delay((d, i) => i*100)
+                        .duration(500)
+                        .ease(d3.easeCubic)
+                        .each(function(d, i) {
+                                d3.select(this)
+                                    .attr("fill", d > 10 ? "green" : "orange");
+                            })
+                        .attr("x", (d, i) => x(i)) // update x too
+                        .attr("y", d => scale(d))
+                        .attr("height", d => scale(0) - scale(d))
+                        .attr("width", x.bandwidth())
+                        .attr("fill", d => `rgb(0, 0, ${Math.round(d * 12)})`);
+
+                    
+
+                    // TEXT LABELS
+                    const labels = svg_bar.selectAll(".labels")
+                                        .data(dataset_array, (d, i) => i);
+
+                    //ENTER labels
+                    labels.enter()
+                        .append("text")
+                        .attr("class", "labels")
+                        .text(d => d)
+                        .attr("x", (d, i) => x(i) + x.bandwidth() / 2)
+                        .attr("y", scale(0)) // Start from base
+                        .attr("opacity", 0)
+                        .transition()
+                        .duration(500)
+                        .delay((d, i) => i * 100)
+                        .attr("y", d => scale(d) + 14)
+                        .attr("opacity", 1);
+
+                    // EXIT LABELS
+                    // labels.exit().remove();
+
+                    // UPDATE labels
+                    labels.transition()
+                        .delay((d, i) => i*100) 
+                        .duration(500)
+                        .ease(d3.easeCubic)
+                        .text(d => d)
+                        .attr("x", (d, i) => x(i) + x.bandwidth()/2)
+                        .attr("y", d => scale(d) + 14);
+
+                    // Y Axis
+                    svg_bar.select(".yaxis")
+                        .transition()
+                        .duration(500)
+                        .call(d3.axisLeft(scale));
+
+                     // X AXES
+                    svg_bar.select(".xaxis")
+                        .transition().duration(500)
+                        .call(d3.axisBottom(x));
+                    console.log("X axis ticks: ", svg_bar.selectAll(".xaxis .tick").size());
+                });
+
+                d3.select("#sortdata")
+                    .on("click", function() {
+                                        sortBars();
+                    });
+
+                var sortOrder = false;                
+                var sortBars = function() {
+                                    //Flip value of sortOrder
+                                    sortOrder = !sortOrder;
+                                    svg_bar.selectAll("rect")
+                                    .sort(function(a, b) {
+                                    if (sortOrder) {
+                                            return d3.ascending(a, b);
+                                            } else {
+                                            return d3.descending(a, b);
+                                            }
+                                    })
+                                    .transition()
+                                    .delay(function(d, i) {
+                                                    return i * 50;
+                                                    })
+                                    .duration(1000)
+                                    .attr("x", function(d, i) {
+                                    return x(i);
+                                    });
+
+                                    // Sort the labels (same order as bars)
+                                    svg_bar.selectAll(".labels")
+                                        .sort(function(a, b) {
+                                                if (sortOrder) {
+                                                    return d3.ascending(a, b);
+                                                    } else {
+                                                    return d3.descending(a, b);
+                                                    }
+                                                 })
+                                        .transition()
+                                        .delay(function(d, i) {
+                                                    return i * 50;
+                                                    })
+                                        .duration(1000)
+                                        .attr("x", function(d, i) {
+                                        return x(i) + x.bandwidth() / 2;
+                                        });
+                                    };
                 
-
-            d3.csv("data/AllIndiaBulletins_Mastwer.csv", // This is an asynchronous function. even d3.json() d3.tsv()
-            function(error, data){ //Use error parameter when data fails to load.
-                if (error) {
-                    console.log(error);
-                } else {
-                    dataset = data;
-                    console_log();
-                    // All functions to visualise your data will go here. 
-                    makeAwesoemcharts();
-                    makeGreatCharts();
-                }
-                
-
-            });
-
-            function console_log() {
-                console.log(dataset);
-            }
-
+            // var dataset;
+            // d3.csv("data/AllIndiaBulletins_Mastwer.csv", // This is an asynchronous function. even d3.json() d3.tsv()
+            //         function(error, data){ //Use error parameter when data fails to load.
+            //             if (error) {
+            //                 console.log(error);
+            //             } else {
+            //                 dataset = data;
+            //                 console.log(dataset);
+            //                 // All functions to visualise your data will go here. 
+            //                 makeAwesoemcharts();
+            //                 makeGreatCharts();
+            //             }
+            // }); 
         </script>
+        
     </body>
 </html>
