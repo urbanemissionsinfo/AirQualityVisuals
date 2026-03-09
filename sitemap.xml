@@ -2,10 +2,14 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://urbanemissionsinfo.github.io/AirQualityVisuals/index.html</loc>
-    <lastmod>2026-03-08T14:23:18.987Z</lastmod>
+    <lastmod>2026-03-09T03:30:52.801Z</lastmod>
   </url>
   <url>
     <loc>https://urbanemissionsinfo.github.io/AirQualityVisuals/notebooks/Calendar_Heatmap.html</loc>
     <lastmod>2026-03-08T14:19:21.074Z</lastmod>
+  </url>
+  <url>
+    <loc>https://urbanemissionsinfo.github.io/AirQualityVisuals/notebooks/Pollution_Stripes.html</loc>
+    <lastmod>2026-03-09T03:28:08.439Z</lastmod>
   </url>
 </urlset>
